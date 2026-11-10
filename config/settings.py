@@ -3,6 +3,7 @@ Django settings for config project.
 """
 import os
 import dj_database_url
+import cloudinary
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,8 +22,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
-    'cloudinary_storage', # <-- ADDED CLOUDINARY
-    'cloudinary',         # <-- ADDED CLOUDINARY
+    'cloudinary_storage',
+    'cloudinary',
     'apps.users',
     'apps.marketplace',
     'apps.interactions',
@@ -101,25 +102,25 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles' 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
-
 AUTH_USER_MODEL = 'users.Student'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- CLOUDINARY CONFIGURATION ---
+# --- CLOUDINARY CONFIGURATION (ENVIRONMENT VARIABLES) ---
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': '594962451991987', # Assuming this is your cloud name
-    'API_KEY': 'poDhlC4wCWe3Ex48uawynwB6j40',
-    'API_SECRET': 'PASTE_YOUR_API_SECRET_HERE', # <--- REPLACE THIS WITH YOUR ACTUAL SECRET
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'Campustextbookmarketplace'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', 'poDhlC4wCWe3Ex48uawynwB6j40'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', 'poDhlC4wCWe3Ex48uawynwB6j40'),
 }
 
-# Required for Django 4.2+ / 5+ / 6+
+# Force Cloudinary to initialize
+cloudinary.config( 
+  cloud_name = CLOUDINARY_STORAGE['CLOUD_NAME'], 
+  api_key = CLOUDINARY_STORAGE['API_KEY'], 
+  api_secret = CLOUDINARY_STORAGE['API_SECRET'] 
+)
+
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
