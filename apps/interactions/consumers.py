@@ -16,10 +16,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        message = data['message']
+        message = data.get('message', '')
+        file_base64 = data.get('file_base64', '')
+        message_type = data.get('message_type', 'text')
         user = self.scope["user"]
         
-        new_msg = await self.save_message(user, message)
+        new_msg = await self.save_message(user, message, file_base64, message_type)
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -28,8 +30,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'message': message, 
                 'username': user.username, 
                 'msg_id': str(new_msg.id),
-                'file_url': '',
-                'message_type': 'text'
+                'file_base64': file_base64,
+                'message_type': message_type
             }
         )
 
@@ -41,15 +43,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'type': 'send_notification',
                 'sender': user.username,
                 'room_id': str(self.room_id),
-                'content': message,
+                'content': message if message_type == 'text' else f"Sent a {message_type}",
                 'book_title': book_title
             }
         )
 
     @database_sync_to_async
-    def save_message(self, user, content):
+    def save_message(self, user, content, file_base64, message_type):
         room = ChatRoom.objects.get(id=self.room_id)
-        return Message.objects.create(room=room, sender=user, content=content)
+        return Message.objects.create(
+            room=room, sender=user, content=content, 
+            file_base64=file_base64, message_type=message_type
+        )
 
     @database_sync_to_async
     def get_room_details(self, user):
@@ -68,7 +73,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'message': event.get('message', ''),
             'username': event['username'],
             'msg_id': event['msg_id'],
-            'file_url': event.get('file_url', ''),
+            'file_base64': event.get('file_base64', ''),
             'message_type': event.get('message_type', 'text')
         }))
 

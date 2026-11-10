@@ -1,9 +1,5 @@
-"""
-Django settings for config project.
-"""
 import os
 import dj_database_url
-import cloudinary
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,8 +18,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
-    'cloudinary_storage',
-    'cloudinary',
     'apps.users',
     'apps.marketplace',
     'apps.interactions',
@@ -61,7 +55,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = "config.asgi.application"
 
-# --- CHANNEL LAYERS ---
 REDIS_URL = os.environ.get('REDIS_URL')
 
 if REDIS_URL:
@@ -69,12 +62,7 @@ if REDIS_URL:
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [
-                    {
-                        "address": REDIS_URL,
-                        "socket_timeout": 30,
-                    }
-                ],
+                "hosts": [{"address": REDIS_URL, "socket_timeout": 30}],
             },
         },
     }
@@ -115,24 +103,9 @@ AUTH_USER_MODEL = 'users.Student'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- SECURE CLOUDINARY CONFIGURATION ---
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
-
-# Only initialize if the keys exist (prevents crashes on local machines without .env)
-if CLOUDINARY_STORAGE['CLOUD_NAME']:
-    cloudinary.config( 
-      cloud_name = CLOUDINARY_STORAGE['CLOUD_NAME'], 
-      api_key = CLOUDINARY_STORAGE['API_KEY'], 
-      api_secret = CLOUDINARY_STORAGE['API_SECRET'] 
-    )
-
 STORAGES = {
     "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",

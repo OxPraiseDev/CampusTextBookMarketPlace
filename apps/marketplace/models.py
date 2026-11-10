@@ -1,7 +1,6 @@
 import uuid
 from django.db import models
 from django.conf import settings
-from cloudinary.models import CloudinaryField # <-- IMPORT CLOUDINARY
 
 class Book(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -16,19 +15,8 @@ class Book(models.Model):
 
 class Listing(models.Model):
     LISTING_TYPES = (('SELL', 'Sell'), ('TRADE', 'Trade'))
-    CONDITIONS = (
-        ('NEW', 'New'), 
-        ('LIKE_NEW', 'Like New'), 
-        ('GOOD', 'Good'), 
-        ('ACCEPTABLE', 'Acceptable')
-    )
-    STATUS = (
-        ('PENDING', 'Pending Approval'),
-        ('ACTIVE', 'Active'), 
-        ('RESERVED', 'Reserved'), 
-        ('SOLD', 'Sold/Traded'),
-        ('CLOSED', 'Closed')
-    )
+    CONDITIONS = (('NEW', 'New'), ('LIKE_NEW', 'Like New'), ('GOOD', 'Good'), ('ACCEPTABLE', 'Acceptable'))
+    STATUS = (('PENDING', 'Pending Approval'), ('ACTIVE', 'Active'), ('RESERVED', 'Reserved'), ('SOLD', 'Sold/Traded'), ('CLOSED', 'Closed'))
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='listings')
@@ -40,8 +28,7 @@ class Listing(models.Model):
     status = models.CharField(max_length=10, choices=STATUS, default='ACTIVE')
     is_flagged = models.BooleanField(default=False)
     
-    # CHANGED TO CLOUDINARY FIELD
-    image = CloudinaryField('image', blank=True, null=True)
+    image_base64 = models.TextField(blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 

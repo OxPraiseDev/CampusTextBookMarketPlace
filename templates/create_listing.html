@@ -1,13 +1,11 @@
 {% extends 'base.html' %}
-
 {% block content %}
 <div class="auth-wrapper" style="padding: 20px 0;">
     <div class="auth-card" style="max-width: 800px;">
         <h2>Post a Textbook</h2>
         <p class="auth-subtitle">Provide your book details to publish your listing.</p>
         
-        <!-- MANDATORY: enctype="multipart/form-data" for file uploads -->
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" id="listing-form">
             {% csrf_token %}
             
             <h3 style="font-size: 1.1rem; margin-bottom: 15px; color: var(--primary);">Book Information</h3>
@@ -27,10 +25,10 @@
                 <div class="form-group full-width"><label>Description</label>{{ form.description }}</div>
             </div>
 
-            <!-- NEW: IMAGE UPLOAD & LIVE PREVIEW -->
             <div class="form-group full-width" style="margin-top: 15px;">
-                <label>{{ form.image.label }}</label>
-                {{ form.image }}
+                <label>Upload Book Cover (Optional)</label>
+                <input type="file" id="image-file" accept="image/*" class="form-control">
+                <input type="hidden" name="image_base64" id="image-base64">
                 <img id="image-preview" style="display: none; max-width: 100%; height: 200px; object-fit: contain; margin-top: 15px; border-radius: 12px; border: 2px dashed var(--primary); padding: 5px;">
             </div>
 
@@ -40,12 +38,10 @@
 </div>
 
 <script>
-    // Apply CSS to all form inputs
-    document.querySelectorAll('input, select, textarea').forEach(input => { 
+    document.querySelectorAll('input:not([type="file"]):not([type="hidden"]), select, textarea').forEach(input => { 
         input.classList.add('form-control'); 
     });
 
-    // Disable Price field if Trade is selected
     const typeField = document.querySelector('select[name="listing_type"]');
     const priceField = document.querySelector('input[name="asking_price"]');
     const priceGroup = priceField.closest('.form-group');
@@ -60,13 +56,12 @@
             priceGroup.style.opacity = '1';
         }
     }
-
     typeField.addEventListener('change', togglePrice);
-    togglePrice(); // Run on page load
+    togglePrice();
 
-    // NEW: JavaScript for Live Image Preview
-    const imageInput = document.querySelector('input[type="file"]');
+    const imageInput = document.getElementById('image-file');
     const imagePreview = document.getElementById('image-preview');
+    const hiddenBase64 = document.getElementById('image-base64');
 
     imageInput.addEventListener('change', function(event) {
         const file = event.target.files[0];
@@ -75,10 +70,9 @@
             reader.onload = function(e) {
                 imagePreview.src = e.target.result;
                 imagePreview.style.display = 'block';
+                hiddenBase64.value = e.target.result;
             }
             reader.readAsDataURL(file);
-        } else {
-            imagePreview.style.display = 'none';
         }
     });
 </script>

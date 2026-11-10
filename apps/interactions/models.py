@@ -25,8 +25,9 @@ class Message(models.Model):
     is_deleted = models.BooleanField(default=False)
     is_read = models.BooleanField(default=False)
     
-    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
-    message_type = models.CharField(max_length=10, default='text') # 'text', 'image', 'audio'
+    # Store Media as Text
+    file_base64 = models.TextField(blank=True, null=True)
+    message_type = models.CharField(max_length=10, default='text')
 
     class Meta:
         ordering = ['timestamp']

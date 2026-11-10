@@ -12,5 +12,3 @@ class CreateListingForm(forms.Form):
     asking_price = forms.DecimalField(required=False, help_text="Leave blank if trading")
     condition = forms.ChoiceField(choices=Listing.CONDITIONS)
     description = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}))
-    
-    image = forms.ImageField(required=False, label="Upload Book Cover (Optional)")
