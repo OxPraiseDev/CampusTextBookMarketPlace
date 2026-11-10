@@ -9,8 +9,9 @@ class StudentSignUpForm(UserCreationForm):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if not email.endswith('@funaab.edu.ng'):
-            raise forms.ValidationError("You must register with a valid @funaab.edu.ng email address.")
+        # Check for the correct student domain
+        if not email.endswith('@student.funaab.edu.ng'):
+            raise forms.ValidationError("You must register with a valid @student.funaab.edu.ng email address.")
         return email
 
 class StudentEditForm(forms.ModelForm):
