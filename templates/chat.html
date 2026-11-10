@@ -17,7 +17,7 @@
         max-width: 75%;
         display: flex;
         transition: transform 0.2s ease-out;
-        touch-action: pan-y; /* Allows vertical scrolling, captures horizontal */
+        touch-action: pan-y; 
     }
 
     /* The red delete background */
@@ -47,17 +47,18 @@
         border-radius: 16px;
         font-size: 0.95rem;
         word-wrap: break-word;
-        width: 100%;
+        /* Removed width: 100% so it shrinks to fit text */
+        display: inline-block; 
     }
 
     .mine .message-bubble {
         background: var(--primary);
-        color: white;
+        color: white; /* Ensure text is white */
         border-bottom-right-radius: 4px;
     }
     .theirs .message-bubble {
         background: white;
-        color: var(--text-main);
+        color: var(--text-main); /* Ensure text is dark */
         border-bottom-left-radius: 4px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
@@ -314,7 +315,7 @@
             deleteBtn.textContent = 'Delete';
             deleteBtn.onclick = function() { deleteMessage(data.msg_id, this); };
             row.appendChild(deleteBtn);
-            setupSwipe(wrapper); // Enable swipe for dynamic messages
+            setupSwipe(wrapper); 
         }
         
         row.appendChild(wrapper);
@@ -362,7 +363,6 @@
         });
     }
 
-    // Initialize swipe for existing messages on page load
     document.querySelectorAll('.message-wrapper').forEach(setupSwipe);
 
     // --- DELETE MESSAGE ---
