@@ -43,7 +43,8 @@ def home(request):
 @login_required
 def create_listing(request):
     if request.method == 'POST':
-        form = CreateListingForm(request.POST)
+        # ADDED request.FILES HERE
+        form = CreateListingForm(request.POST, request.FILES)
         if form.is_valid():
             book, _ = Book.objects.get_or_create(
                 isbn=form.cleaned_data['isbn'],
@@ -60,6 +61,7 @@ def create_listing(request):
                 asking_price=form.cleaned_data['asking_price'] if form.cleaned_data['listing_type'] == 'SELL' else None,
                 condition=form.cleaned_data['condition'],
                 description=form.cleaned_data['description'],
+                image=form.cleaned_data['image'] # ADDED IMAGE HERE
             )
             messages.success(request, "Your book is now live!")
             return redirect('home')

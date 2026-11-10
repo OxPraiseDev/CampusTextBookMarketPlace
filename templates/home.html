@@ -42,7 +42,14 @@
     {% include '_book_grid.html' %}
 </div>
 
+<!-- IMAGE MODAL -->
+<div id="image-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+    <span onclick="closeImageModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; font-weight: bold;">&times;</span>
+    <img id="modal-image" src="" style="max-width: 90%; max-height: 90%; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+</div>
+
 <script>
+    // --- LIVE SEARCH SCRIPT ---
     const searchInput = document.getElementById('search-input');
     const conditionFilter = document.getElementById('condition-filter');
     const typeFilter = document.getElementById('type-filter');
@@ -55,7 +62,6 @@
         const condition = conditionFilter.value;
         const type = typeFilter.value;
 
-        // Show loading state (optional, but good for UX)
         gridWrapper.style.opacity = '0.5';
 
         const url = `/?q=${encodeURIComponent(q)}&condition=${condition}&listing_type=${type}`;
@@ -76,20 +82,36 @@
         });
     }
 
-    // Trigger on typing (Debounced so it doesn't spam the server)
     searchInput.addEventListener('input', function() {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(performLiveSearch, 400); // Waits 400ms after typing stops
+        debounceTimer = setTimeout(performLiveSearch, 400);
     });
 
-    // Trigger instantly on dropdown change
     conditionFilter.addEventListener('change', performLiveSearch);
     typeFilter.addEventListener('change', performLiveSearch);
 
-    // Prevent form submission (rely entirely on AJAX)
     document.getElementById('search-form').addEventListener('submit', function(e) {
         e.preventDefault();
         performLiveSearch();
+    });
+
+    // --- IMAGE MODAL SCRIPT ---
+    function openImageModal(imageUrl) {
+        const modal = document.getElementById('image-modal');
+        const modalImg = document.getElementById('modal-image');
+        modalImg.src = imageUrl;
+        modal.style.display = 'flex';
+    }
+
+    function closeImageModal() {
+        document.getElementById('image-modal').style.display = 'none';
+    }
+
+    // Close modal if clicking outside the image
+    document.getElementById('image-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeImageModal();
+        }
     });
 </script>
 {% endblock %}

@@ -4,9 +4,10 @@
 <div class="auth-wrapper" style="padding: 20px 0;">
     <div class="auth-card" style="max-width: 800px;">
         <h2>Post a Textbook</h2>
-        <p class="auth-subtitle">Provide your book details to publish your listing.</p>
+        <p class="auth-subtitle">Fill in the details below. Add a picture so buyers can see the condition!</p>
         
-        <form method="POST">
+        <!-- MANDATORY: enctype="multipart/form-data" for file uploads -->
+        <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             
             <h3 style="font-size: 1.1rem; margin-bottom: 15px; color: var(--primary);">Book Information</h3>
@@ -26,15 +27,20 @@
                 <div class="form-group full-width"><label>Description</label>{{ form.description }}</div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-large">Publish listing</button>
+            <!-- IMAGE UPLOAD & PREVIEW -->
+            <div class="form-group full-width" style="margin-top: 15px;">
+                <label>{{ form.image.label }}</label>
+                {{ form.image }}
+                <img id="image-preview" style="display: none; max-width: 100%; height: 200px; object-fit: contain; margin-top: 15px; border-radius: 12px; border: 2px dashed var(--primary); padding: 5px;">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large" style="margin-top: 20px;">Submit for Approval</button>
         </form>
     </div>
 </div>
 
 <script>
     // Apply CSS to all form inputs
-
-
     document.querySelectorAll('input, select, textarea').forEach(input => { 
         input.classList.add('form-control'); 
     });
@@ -58,5 +64,22 @@
     typeField.addEventListener('change', togglePrice);
     togglePrice(); // Run on page load
 
+    // JavaScript for Live Image Preview
+    const imageInput = document.querySelector('input[type="file"]');
+    const imagePreview = document.getElementById('image-preview');
+
+    imageInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        } else {
+            imagePreview.style.display = 'none';
+        }
+    });
 </script>
 {% endblock %}

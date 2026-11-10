@@ -1,6 +1,17 @@
 <div class="listing-grid" id="book-grid-container">
     {% for listing in listings %}
         <div class="book-card">
+            
+            <!-- BOOK COVER IMAGE -->
+            {% if listing.image %}
+                <img src="{{ listing.image.url }}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 15px; cursor: pointer;" 
+                     onclick="openImageModal('{{ listing.image.url }}')" alt="{{ listing.book.title }}">
+            {% else %}
+                <div style="width: 100%; height: 200px; background: #f1f5f9; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; color: #94a3b8;">
+                    <span class="material-icons-round" style="font-size: 50px;">auto_stories</span>
+                </div>
+            {% endif %}
+
             <h3 style="color: var(--text-main); margin-bottom: 5px;">{{ listing.book.title }}</h3>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">By {{ listing.book.author }} • {{ listing.book.edition }} Ed.</p>
             
@@ -15,7 +26,10 @@
             <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; flex-grow: 1;">{{ listing.description|truncatechars:80 }}</p>
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
-                <span style="font-size: 0.85rem; font-weight: 600;"><span class="material-icons-round" style="font-size: 16px; vertical-align: middle; color: var(--primary);">account_circle</span> {{ listing.seller.username }}</span>
+                <span style="font-size: 0.85rem; font-weight: 600;">
+                    <span class="material-icons-round" style="font-size: 16px; vertical-align: middle; color: var(--primary);">account_circle</span> 
+                    {{ listing.seller.username }}
+                </span>
                 
                 {% if user.is_authenticated and user != listing.seller %}
                     <a href="{% url 'start_chat' listing.id %}" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem;">
@@ -25,7 +39,9 @@
                 {% elif user == listing.seller %}
                     <span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">Your Listing</span>
                 {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem;">Login to chat</a>
+                    <a href="{% url 'login' %}" class="btn btn-outline" style="padding: 8px 16px; font-size: 0.85rem;">
+                        <span class="material-icons-round" style="font-size: 16px;">login</span> Login to Chat
+                    </a>
                 {% endif %}
             </div>
         </div>

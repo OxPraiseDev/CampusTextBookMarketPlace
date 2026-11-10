@@ -3,7 +3,7 @@ from django.db import models
 from django.conf import settings
 
 class Book(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False) # ALPHANUMERIC ID
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     isbn = models.CharField(max_length=20, unique=True)
     title = models.CharField(max_length=200)
     author = models.CharField(max_length=150)
@@ -15,10 +15,21 @@ class Book(models.Model):
 
 class Listing(models.Model):
     LISTING_TYPES = (('SELL', 'Sell'), ('TRADE', 'Trade'))
-    CONDITIONS = (('NEW', 'New'), ('LIKE_NEW', 'Like New'), ('GOOD', 'Good'), ('ACCEPTABLE', 'Acceptable'))
-    STATUS = (('ACTIVE', 'Active'), ('SOLD', 'Sold/Traded'), ('CLOSED', 'Closed'))
+    CONDITIONS = (
+        ('NEW', 'New'), 
+        ('LIKE_NEW', 'Like New'), 
+        ('GOOD', 'Good'), 
+        ('ACCEPTABLE', 'Acceptable')
+    )
+    STATUS = (
+        ('PENDING', 'Pending Approval'),
+        ('ACTIVE', 'Active'), 
+        ('RESERVED', 'Reserved'), 
+        ('SOLD', 'Sold/Traded'),
+        ('CLOSED', 'Closed')
+    )
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False) # ALPHANUMERIC ID
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='listings')
     seller = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='listings')
     listing_type = models.CharField(max_length=10, choices=LISTING_TYPES)
@@ -27,6 +38,8 @@ class Listing(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=10, choices=STATUS, default='ACTIVE')
     is_flagged = models.BooleanField(default=False)
+    image = models.ImageField(upload_to='book_images/', blank=True, null=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
