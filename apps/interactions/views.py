@@ -54,11 +54,15 @@ def select_trade_book(request, listing_id):
 @login_required
 def view_chat(request, room_id):
     room = get_object_or_404(ChatRoom, id=room_id)
-    if request.user != room.buyer and request.user != room.seller:
+    
+    # FIX: Allow Admins (is_staff) to view ANY chat for moderation
+    if not request.user.is_staff and request.user != room.buyer and request.user != room.seller:
         messages.error(request, "You are not authorized to view this chat.")
         return redirect('home')
     
-    Message.objects.filter(room=room, is_read=False).exclude(sender=request.user).update(is_read=True)
+    # Mark messages as read (only if the user is actually a participant)
+    if request.user == room.buyer or request.user == room.seller:
+        Message.objects.filter(room=room, is_read=False).exclude(sender=request.user).update(is_read=True)
     
     return render(request, 'chat.html', {'room': room})
 
@@ -68,11 +72,10 @@ def delete_message(request, message_id):
     if request.user == message.sender:
         message.is_deleted = True
         message.content = "This message was deleted."
-        message.file_base64 = None # Clear the base64 data to save space
+        message.file_base64 = None
         message.message_type = 'text'
         message.save()
         
-        # Return JSON if it's an AJAX request (from our swipe feature)
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'status': 'success'})
             

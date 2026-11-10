@@ -76,7 +76,7 @@
     </div>
 
     <!-- Chat Input -->
-    {% if not room.is_completed %}
+     {% if not room.is_completed and not request.user.is_staff %}
     <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0;">
         <div style="display: flex; gap: 10px; align-items: center;">
             <input type="file" id="image-upload" accept="image/*" style="display: none;">
