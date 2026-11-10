@@ -61,13 +61,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = "config.asgi.application"
 
+# --- FIXED CHANNEL LAYERS ---
 REDIS_URL = os.environ.get('REDIS_URL')
 
 if REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": { "hosts": [REDIS_URL] },
+            "CONFIG": {
+                "hosts": [
+                    {
+                        "address": REDIS_URL,
+                        "socket_timeout": 30,  # Fixes the TimeoutError
+                    }
+                ],
+            },
         },
     }
 else:
