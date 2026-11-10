@@ -40,6 +40,7 @@
         </div>
     </div>
 
+    <!-- Chat Messages -->
     <div id="chat-log" style="flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; gap: 15px;">
         {% for message in room.messages.all %}
             <div style="max-width: 75%; display: flex; flex-direction: column; {% if message.sender == user %}align-self: flex-end;{% else %}align-self: flex-start;{% endif %}">
@@ -52,9 +53,19 @@
                     <div style="font-size: 0.7rem; opacity: 0.7; margin-bottom: 4px; font-weight: 600;">{{ message.sender.username }}</div>
                     
                     {% if message.message_type == 'image' %}
-                        <img src="{{ message.file_base64 }}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" alt="Image">
+                        <img src="{{ message.file_base64 }}" style="max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer;" onclick="openImageModal('{{ message.file_base64 }}')" alt="Image">
                     {% elif message.message_type == 'audio' %}
-                        <audio controls src="{{ message.file_base64 }}" style="margin-top: 5px; width: 100%; min-height: 40px; outline: none;"></audio>
+                        <!-- CUSTOM WHATSAPP AUDIO PLAYER -->
+                        <div class="wa-audio-player">
+                            <button class="wa-play-btn" onclick="toggleAudio(this)">
+                                <span class="material-icons-round">play_arrow</span>
+                            </button>
+                            <div class="wa-progress" onclick="seekAudio(event, this)">
+                                <div class="wa-progress-bar"></div>
+                            </div>
+                            <span class="wa-time">0:00</span>
+                            <audio src="{{ message.file_base64 }}" ontimeupdate="updateTime(this)" onended="audioEnded(this)"></audio>
+                        </div>
                     {% else %}
                         {{ message.content }}
                     {% endif %}
@@ -63,18 +74,22 @@
         {% endfor %}
     </div>
 
+    <!-- Chat Input -->
     {% if not room.is_completed %}
     <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0;">
-        <canvas id="visualizer" style="display: none; width: 100%; height: 50px; background: #f1f5f9; border-radius: 8px; margin-bottom: 10px;"></canvas>
         <div style="display: flex; gap: 10px; align-items: center;">
             <input type="file" id="image-upload" accept="image/*" style="display: none;">
             <button onclick="document.getElementById('image-upload').click();" class="btn btn-outline" style="border-radius: 50%; padding: 10px; border: none; color: var(--primary);">
                 <span class="material-icons-round">image</span>
             </button>
+
+            <!-- HOLD TO RECORD BUTTON -->
             <button id="record-btn" class="btn btn-outline" style="border-radius: 50%; padding: 10px; border: none; color: var(--text-muted);">
                 <span class="material-icons-round">mic</span>
             </button>
+
             <input id="chat-message-input" type="text" class="form-control" placeholder="Type a message..." style="margin: 0; border-radius: 30px; background: #f1f5f9;">
+            
             <button id="chat-message-submit" class="btn btn-primary" style="border-radius: 50%; padding: 10px; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center;">
                 <span class="material-icons-round">send</span>
             </button>
@@ -83,18 +98,16 @@
     {% endif %}
 </div>
 
-<div id="report-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 30px; border-radius: 16px; max-width: 400px; width: 90%;">
-        <h3 style="margin-top: 0; color: #ef4444;">Report User</h3>
-        <form method="POST" action="{% url 'submit_report' room.id %}">
-            {% csrf_token %}
-            <textarea name="reason" class="form-control" rows="4" placeholder="Explain what happened..." required style="margin-bottom: 20px;"></textarea>
-            <div style="display: flex; gap: 10px;">
-                <button type="button" onclick="document.getElementById('report-modal').style.display = 'none';" class="btn btn-outline" style="flex: 1;">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex: 1; background: #ef4444;">Submit</button>
-            </div>
-        </form>
-    </div>
+<!-- RECORDING OVERLAY -->
+<div id="recording-overlay">
+    <div class="recording-dot"></div>
+    <span style="font-weight: 600; font-size: 1rem;">Recording... Release to send</span>
+</div>
+
+<!-- IMAGE MODAL -->
+<div id="image-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+    <span onclick="closeImageModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; font-weight: bold;">&times;</span>
+    <img id="modal-image" src="" style="max-width: 90%; max-height: 90%; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
 </div>
 
 {{ room.id|json_script:"room-id" }}
@@ -137,9 +150,19 @@
         let contentHTML = `<div style="font-size: 0.7rem; opacity: 0.7; margin-bottom: 4px; font-weight: 600;">${data.username}</div>`;
         
         if (data.message_type === 'image') {
-            contentHTML += `<img src="${data.file_base64}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" alt="Image">`;
+            contentHTML += `<img src="${data.file_base64}" style="max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer;" onclick="openImageModal('${data.file_base64}')">`;
         } else if (data.message_type === 'audio') {
-            contentHTML += `<audio controls src="${data.file_base64}" style="margin-top: 5px; width: 100%; min-height: 40px;"></audio>`;
+            contentHTML += `
+                <div class="wa-audio-player">
+                    <button class="wa-play-btn" onclick="toggleAudio(this)">
+                        <span class="material-icons-round">play_arrow</span>
+                    </button>
+                    <div class="wa-progress" onclick="seekAudio(event, this)">
+                        <div class="wa-progress-bar"></div>
+                    </div>
+                    <span class="wa-time">0:00</span>
+                    <audio src="${data.file_base64}" ontimeupdate="updateTime(this)" onended="audioEnded(this)"></audio>
+                </div>`;
         } else {
             contentHTML += data.message;
         }
@@ -150,18 +173,19 @@
         chatLog.scrollTop = chatLog.scrollHeight;
     };
 
+    // --- TEXT MESSAGES ---
     function sendMessage() {
         const message = messageInput.value;
         if (message.trim() === '') return;
         chatSocket.send(JSON.stringify({ 'message': message, 'message_type': 'text' }));
         messageInput.value = '';
     }
-
     if (submitBtn) {
         submitBtn.onclick = sendMessage;
         messageInput.onkeyup = function(e) { if (e.key === 'Enter') sendMessage(); };
     }
 
+    // --- MEDIA UPLOAD ---
     function sendBase64File(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -183,67 +207,119 @@
         }
     });
 
-    let mediaRecorder, audioChunks = [], isRecording = false, audioContext, analyser, dataArray, animationId;
+    // --- HOLD TO RECORD LOGIC ---
+    let mediaRecorder, audioChunks = [], isRecording = false;
     const recordBtn = document.getElementById('record-btn');
-    const canvas = document.getElementById('visualizer');
-    const canvasCtx = canvas.getContext('2d');
+    const overlay = document.getElementById('recording-overlay');
 
-    recordBtn.addEventListener('click', async () => {
-        if (!isRecording) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const source = audioContext.createMediaStreamSource(stream);
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                dataArray = new Uint8Array(analyser.frequencyBinCount);
-                source.connect(analyser);
-                canvas.style.display = 'block';
-                drawWaveform();
+    async function startRecording(e) {
+        e.preventDefault(); // Prevent default touch behaviors
+        if (isRecording) return;
+        
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
+            
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const audioFile = new File([audioBlob], "voice_note.webm", { type: 'audio/webm' });
+                if (audioChunks.length > 0) sendBase64File(audioFile);
+                audioChunks = [];
+                stream.getTracks().forEach(track => track.stop());
+            };
 
-                mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = event => { audioChunks.push(event.data); };
-                mediaRecorder.onstop = () => {
-                    cancelAnimationFrame(animationId);
-                    canvas.style.display = 'none';
-                    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const audioFile = new File([audioBlob], "voice_note.webm", { type: 'audio/webm' });
-                    sendBase64File(audioFile);
-                    audioChunks = [];
-                };
-
-                mediaRecorder.start();
-                isRecording = true;
-                recordBtn.style.color = '#ef4444';
-                recordBtn.innerHTML = '<span class="material-icons-round">stop</span>';
-            } catch (err) {
-                alert("Microphone access denied.");
-            }
-        } else {
-            mediaRecorder.stop();
-            isRecording = false;
-            recordBtn.style.color = 'var(--text-muted)';
+            mediaRecorder.start();
+            isRecording = true;
+            recordBtn.style.color = '#ef4444';
             recordBtn.innerHTML = '<span class="material-icons-round">mic</span>';
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            audioContext.close();
-        }
-    });
-
-    function drawWaveform() {
-        animationId = requestAnimationFrame(drawWaveform);
-        analyser.getByteFrequencyData(dataArray);
-        canvasCtx.fillStyle = '#f1f5f9';
-        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-        const barWidth = (canvas.width / dataArray.length) * 2.5;
-        let barHeight, x = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-            barHeight = dataArray[i] / 2;
-            canvasCtx.fillStyle = '#059669';
-            canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-            x += barWidth + 1;
+            overlay.style.display = 'flex';
+        } catch (err) {
+            alert("Microphone access denied.");
         }
     }
+
+    function stopRecording(e) {
+        e.preventDefault();
+        if (!isRecording) return;
+        mediaRecorder.stop();
+        isRecording = false;
+        recordBtn.style.color = 'var(--text-muted)';
+        overlay.style.display = 'none';
+    }
+
+    // Mouse events for desktop
+    recordBtn.addEventListener('mousedown', startRecording);
+    recordBtn.addEventListener('mouseup', stopRecording);
+    recordBtn.addEventListener('mouseleave', stopRecording);
+
+    // Touch events for mobile
+    recordBtn.addEventListener('touchstart', startRecording);
+    recordBtn.addEventListener('touchend', stopRecording);
+
+    // --- CUSTOM AUDIO PLAYER FUNCTIONS ---
+    function toggleAudio(btn) {
+        const audio = btn.parentElement.querySelector('audio');
+        const icon = btn.querySelector('.material-icons-round');
+        
+        // Pause all other audios
+        document.querySelectorAll('audio').forEach(a => {
+            if (a !== audio) {
+                a.pause();
+                a.parentElement.querySelector('.wa-play-btn .material-icons-round').textContent = 'play_arrow';
+            }
+        });
+
+        if (audio.paused) {
+            audio.play();
+            icon.textContent = 'pause';
+        } else {
+            audio.pause();
+            icon.textContent = 'play_arrow';
+        }
+    }
+
+    function updateTime(audio) {
+        const player = audio.parentElement;
+        const progressBar = player.querySelector('.wa-progress-bar');
+        const timeDisplay = player.querySelector('.wa-time');
+        
+        const current = audio.currentTime;
+        const duration = audio.duration || 1; // Avoid divide by zero
+        
+        progressBar.style.width = (current / duration) * 100 + '%';
+        
+        const mins = Math.floor(current / 60);
+        const secs = Math.floor(current % 60);
+        timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function audioEnded(audio) {
+        const player = audio.parentElement;
+        player.querySelector('.wa-play-btn .material-icons-round').textContent = 'play_arrow';
+        player.querySelector('.wa-progress-bar').style.width = '0%';
+        player.querySelector('.wa-time').textContent = '0:00';
+    }
+
+    function seekAudio(event, progressBar) {
+        const audio = progressBar.parentElement.querySelector('audio');
+        const rect = progressBar.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const width = rect.width;
+        audio.currentTime = (clickX / width) * audio.duration;
+    }
+
+    // --- IMAGE MODAL ---
+    function openImageModal(imageUrl) {
+        document.getElementById('modal-image').src = imageUrl;
+        document.getElementById('image-modal').style.display = 'flex';
+    }
+    function closeImageModal() {
+        document.getElementById('image-modal').style.display = 'none';
+    }
+    document.getElementById('image-modal').addEventListener('click', function(e) {
+        if (e.target === this) closeImageModal();
+    });
 
     const badge = document.getElementById('inbox-badge');
     if (badge) { badge.style.display = 'none'; badge.innerText = '0'; }

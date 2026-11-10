@@ -404,3 +404,86 @@ body {
         justify-content: center;
     }
 }
+
+/* WhatsApp Style Audio Player */
+.wa-audio-player {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 8px 12px;
+    border-radius: 20px;
+    min-width: 200px;
+}
+
+.wa-play-btn {
+    background: white;
+    color: var(--primary);
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.wa-play-btn .material-icons-round {
+    font-size: 18px;
+}
+
+.wa-progress {
+    flex: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+}
+
+.wa-progress-bar {
+    height: 100%;
+    background: white;
+    border-radius: 2px;
+    width: 0%;
+}
+
+.wa-time {
+    font-size: 0.75rem;
+    color: white;
+    opacity: 0.8;
+    min-width: 35px;
+    text-align: right;
+}
+
+/* Recording Overlay */
+#recording-overlay {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    padding: 15px 25px;
+    border-radius: 30px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    display: none;
+    align-items: center;
+    gap: 15px;
+    z-index: 1000;
+}
+
+.recording-dot {
+    width: 12px;
+    height: 12px;
+    background: red;
+    border-radius: 50%;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+}
