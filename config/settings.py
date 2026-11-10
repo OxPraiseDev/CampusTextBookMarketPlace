@@ -61,7 +61,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = "config.asgi.application"
 
-# --- FIXED CHANNEL LAYERS ---
+# --- CHANNEL LAYERS ---
 REDIS_URL = os.environ.get('REDIS_URL')
 
 if REDIS_URL:
@@ -72,7 +72,7 @@ if REDIS_URL:
                 "hosts": [
                     {
                         "address": REDIS_URL,
-                        "socket_timeout": 30,  # Fixes the TimeoutError
+                        "socket_timeout": 30,
                     }
                 ],
             },
@@ -115,20 +115,20 @@ AUTH_USER_MODEL = 'users.Student'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- CLOUDINARY CONFIGURATION ---
+# --- SECURE CLOUDINARY CONFIGURATION ---
 CLOUDINARY_STORAGE = {
-    # Changed to lowercase!
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'campustextbookmarketplace'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', 'poDhlC4wCWe3Ex48uawynwB6j40'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', 'poDhlC4wCWe3Ex48uawynwB6j40'),
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# Force Cloudinary to initialize
-cloudinary.config( 
-  cloud_name = CLOUDINARY_STORAGE['CLOUD_NAME'], 
-  api_key = CLOUDINARY_STORAGE['API_KEY'], 
-  api_secret = CLOUDINARY_STORAGE['API_SECRET'] 
-)
+# Only initialize if the keys exist (prevents crashes on local machines without .env)
+if CLOUDINARY_STORAGE['CLOUD_NAME']:
+    cloudinary.config( 
+      cloud_name = CLOUDINARY_STORAGE['CLOUD_NAME'], 
+      api_key = CLOUDINARY_STORAGE['API_KEY'], 
+      api_secret = CLOUDINARY_STORAGE['API_SECRET'] 
+    )
 
 STORAGES = {
     "default": {
