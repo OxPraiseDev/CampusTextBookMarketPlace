@@ -68,7 +68,14 @@ def delete_message(request, message_id):
     if request.user == message.sender:
         message.is_deleted = True
         message.content = "This message was deleted."
+        message.file_base64 = None # Clear the base64 data to save space
+        message.message_type = 'text'
         message.save()
+        
+        # Return JSON if it's an AJAX request (from our swipe feature)
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'success'})
+            
     return redirect('view_chat', room_id=message.room.id)
 
 @login_required
