@@ -1,149 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
-<style>
-    /* Swipe to delete styles */
-    .message-row {
-        width: 100%;
-        display: flex;
-        margin-bottom: 15px;
-        position: relative;
-        overflow: hidden;
-    }
-    .message-row.mine { justify-content: flex-end; }
-    .message-row.theirs { justify-content: flex-start; }
-
-    .message-wrapper {
-        position: relative;
-        max-width: 75%;
-        display: flex;
-        transition: transform 0.2s ease-out;
-        touch-action: pan-y; 
-    }
-
-    /* The red delete background */
-    .delete-action {
-        position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
-        background: #ef4444;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 20px;
-        border-radius: 12px;
-        z-index: 1;
-        font-weight: bold;
-        cursor: pointer;
-        opacity: 0;
-        transition: opacity 0.2s;
-    }
-
-    .message-bubble {
-        position: relative;
-        z-index: 2;
-        padding: 12px 16px;
-        border-radius: 16px;
-        font-size: 0.95rem;
-        word-wrap: break-word;
-        /* Removed width: 100% so it shrinks to fit text */
-        display: inline-block; 
-    }
-
-    .mine .message-bubble {
-        background: var(--primary);
-        color: white; /* Ensure text is white */
-        border-bottom-right-radius: 4px;
-    }
-    .theirs .message-bubble {
-        background: white;
-        color: var(--text-main); /* Ensure text is dark */
-        border-bottom-left-radius: 4px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-
-    /* WhatsApp Audio Player */
-    .wa-audio-player {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: rgba(255, 255, 255, 0.2);
-        padding: 8px 12px;
-        border-radius: 20px;
-        min-width: 200px;
-    }
-    .wa-play-btn {
-        background: white;
-        color: var(--primary);
-        border: none;
-        border-radius: 50%;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-    .wa-progress {
-        flex: 1;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.4);
-        border-radius: 2px;
-        cursor: pointer;
-        position: relative;
-    }
-    .wa-progress-bar {
-        height: 100%;
-        background: white;
-        border-radius: 2px;
-        width: 0%;
-    }
-    .wa-time {
-        font-size: 0.75rem;
-        color: white;
-        opacity: 0.8;
-        min-width: 35px;
-        text-align: right;
-    }
-
-    /* Recording Overlay */
-    #recording-overlay {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: white;
-        padding: 15px 25px;
-        border-radius: 30px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        display: none;
-        align-items: center;
-        gap: 15px;
-        z-index: 1000;
-    }
-    .recording-dot {
-        width: 12px; height: 12px; background: red; border-radius: 50%; animation: pulse 1s infinite;
-    }
-    @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
-</style>
-
 <div class="solid-panel" style="max-width: 800px; margin: 0 auto; padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 75vh;">
     
-    <!-- Header -->
     <div style="background: var(--primary); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h3 style="margin: 0;">{{ room.listing.book.title }}</h3>
             <p style="margin: 5px 0 0 0; font-size: 0.85rem; opacity: 0.9;">
                 {% if request.user == room.buyer %} Seller: {{ room.seller.username }} {% else %} Buyer: {{ room.buyer.username }} {% endif %}
             </p>
-            {% if room.offered_listing %}
-                <div style="margin-top: 8px; background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 8px; display: inline-block; font-size: 0.8rem;">
-                    <span class="material-icons-round" style="font-size: 14px; vertical-align: middle;">swap_horiz</span>
-                    Trading for: <strong>{{ room.offered_listing.book.title }}</strong>
-                </div>
-            {% endif %}
         </div>
         
         <div style="display: flex; align-items: center; gap: 10px;">
@@ -177,35 +41,34 @@
     </div>
 
     <!-- Chat Messages -->
-    <div id="chat-log" style="flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; display: flex; flex-direction: column;">
+    <div id="chat-log" style="flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc; display: flex; flex-direction: column; gap: 15px;">
         {% for message in room.messages.all %}
-            <div class="message-row {% if message.sender == user %}mine{% else %}theirs{% endif %}">
-                <!-- Delete Background -->
-                {% if message.sender == user and not message.is_deleted %}
-                    <div class="delete-action" onclick="deleteMessage('{{ message.id }}', this)">Delete</div>
-                {% endif %}
-
-                <div class="message-wrapper" data-msg-id="{{ message.id }}">
-                    <div class="message-bubble">
-                        <div style="font-size: 0.7rem; opacity: 0.7; margin-bottom: 4px; font-weight: 600;">{{ message.sender.username }}</div>
-                        
-                        {% if message.message_type == 'image' and message.file_base64 %}
-                            <img src="{{ message.file_base64 }}" style="max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer;" onclick="openImageModal('{{ message.file_base64 }}')" alt="Image">
-                        {% elif message.message_type == 'audio' and message.file_base64 %}
-                            <div class="wa-audio-player">
-                                <button class="wa-play-btn" onclick="toggleAudio(this)">
-                                    <span class="material-icons-round">play_arrow</span>
-                                </button>
-                                <div class="wa-progress" onclick="seekAudio(event, this)">
-                                    <div class="wa-progress-bar"></div>
-                                </div>
-                                <span class="wa-time">0:00</span>
-                                <audio src="{{ message.file_base64 }}" ontimeupdate="updateTime(this)" onended="audioEnded(this)"></audio>
+            <div style="max-width: 75%; display: flex; flex-direction: column; {% if message.sender == user %}align-self: flex-end;{% else %}align-self: flex-start;{% endif %}">
+                <div style="padding: 12px 16px; border-radius: 16px; font-size: 0.95rem;
+                    {% if message.sender == user %}
+                        background: var(--primary); color: white; border-bottom-right-radius: 4px;
+                    {% else %}
+                        background: white; color: var(--text-main); border-bottom-left-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                    {% endif %}">
+                    <div style="font-size: 0.7rem; opacity: 0.7; margin-bottom: 4px; font-weight: 600;">{{ message.sender.username }}</div>
+                    
+                    {% if message.message_type == 'image' %}
+                        <img src="{{ message.file_base64 }}" style="max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer;" onclick="openImageModal('{{ message.file_base64 }}')" alt="Image">
+                    {% elif message.message_type == 'audio' %}
+                        <!-- CUSTOM WHATSAPP AUDIO PLAYER -->
+                        <div class="wa-audio-player">
+                            <button class="wa-play-btn" onclick="toggleAudio(this)">
+                                <span class="material-icons-round">play_arrow</span>
+                            </button>
+                            <div class="wa-progress" onclick="seekAudio(event, this)">
+                                <div class="wa-progress-bar"></div>
                             </div>
-                        {% else %}
-                            {{ message.content }}
-                        {% endif %}
-                    </div>
+                            <span class="wa-time">0:00</span>
+                            <audio src="{{ message.file_base64 }}" ontimeupdate="updateTime(this)" onended="audioEnded(this)"></audio>
+                        </div>
+                    {% else %}
+                        {{ message.content }}
+                    {% endif %}
                 </div>
             </div>
         {% endfor %}
@@ -220,6 +83,7 @@
                 <span class="material-icons-round">image</span>
             </button>
 
+            <!-- HOLD TO RECORD BUTTON -->
             <button id="record-btn" class="btn btn-outline" style="border-radius: 50%; padding: 10px; border: none; color: var(--text-muted);">
                 <span class="material-icons-round">mic</span>
             </button>
@@ -234,29 +98,16 @@
     {% endif %}
 </div>
 
+<!-- RECORDING OVERLAY -->
 <div id="recording-overlay">
     <div class="recording-dot"></div>
     <span style="font-weight: 600; font-size: 1rem;">Recording... Release to send</span>
 </div>
 
+<!-- IMAGE MODAL -->
 <div id="image-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
-    <span onclick="document.getElementById('image-modal').style.display = 'none'" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; font-weight: bold;">&times;</span>
+    <span onclick="closeImageModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; font-weight: bold;">&times;</span>
     <img id="modal-image" src="" style="max-width: 90%; max-height: 90%; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-</div>
-
-<!-- REPORT MODAL -->
-<div id="report-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 30px; border-radius: 16px; max-width: 400px; width: 90%;">
-        <h3 style="margin-top: 0; color: #ef4444;">Report User</h3>
-        <form method="POST" action="{% url 'submit_report' room.id %}">
-            {% csrf_token %}
-            <textarea name="reason" class="form-control" rows="4" placeholder="Explain what happened..." required style="margin-bottom: 20px;"></textarea>
-            <div style="display: flex; gap: 10px;">
-                <button type="button" onclick="document.getElementById('report-modal').style.display = 'none';" class="btn btn-outline" style="flex: 1;">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex: 1; background: #ef4444;">Submit</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 {{ room.id|json_script:"room-id" }}
@@ -271,21 +122,31 @@
 
     chatLog.scrollTop = chatLog.scrollHeight;
 
-    // --- WEBSOCKET RECEIVE ---
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         const isMe = data.username === currentUser;
-        
-        const row = document.createElement('div');
-        row.className = `message-row ${isMe ? 'mine' : 'theirs'}`;
-        
-        const wrapper = document.createElement('div');
-        wrapper.className = 'message-wrapper';
-        wrapper.dataset.msgId = data.msg_id;
-        
+        const messageDiv = document.createElement('div');
+        messageDiv.style.maxWidth = '75%';
+        messageDiv.style.display = 'flex';
+        messageDiv.style.flexDirection = 'column';
+        messageDiv.style.alignSelf = isMe ? 'flex-end' : 'flex-start';
+
         const bubble = document.createElement('div');
-        bubble.className = 'message-bubble';
+        bubble.style.padding = '12px 16px';
+        bubble.style.borderRadius = '16px';
+        bubble.style.fontSize = '0.95rem';
         
+        if (isMe) {
+            bubble.style.background = 'var(--primary)';
+            bubble.style.color = 'white';
+            bubble.style.borderBottomRightRadius = '4px';
+        } else {
+            bubble.style.background = 'white';
+            bubble.style.color = 'var(--text-main)';
+            bubble.style.borderBottomLeftRadius = '4px';
+            bubble.style.boxShadow = '0 2px 5px rgba(0,0,0,0.05)';
+        }
+
         let contentHTML = `<div style="font-size: 0.7rem; opacity: 0.7; margin-bottom: 4px; font-weight: 600;">${data.username}</div>`;
         
         if (data.message_type === 'image') {
@@ -307,83 +168,10 @@
         }
 
         bubble.innerHTML = contentHTML;
-        wrapper.appendChild(bubble);
-        
-        if (isMe) {
-            const deleteBtn = document.createElement('div');
-            deleteBtn.className = 'delete-action';
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.onclick = function() { deleteMessage(data.msg_id, this); };
-            row.appendChild(deleteBtn);
-            setupSwipe(wrapper); 
-        }
-        
-        row.appendChild(wrapper);
-        chatLog.appendChild(row);
+        messageDiv.appendChild(bubble);
+        chatLog.appendChild(messageDiv);
         chatLog.scrollTop = chatLog.scrollHeight;
     };
-
-    // --- SWIPE TO DELETE LOGIC ---
-    function setupSwipe(wrapper) {
-        let startX = 0;
-        let currentX = 0;
-        let isSwiping = false;
-
-        wrapper.addEventListener('touchstart', (e) => {
-            startX = e.touches[0].clientX;
-            isSwiping = true;
-            wrapper.style.transition = 'none'; 
-        }, { passive: true });
-
-        wrapper.addEventListener('touchmove', (e) => {
-            if (!isSwiping) return;
-            currentX = e.touches[0].clientX;
-            const diff = currentX - startX;
-            
-            if (diff < 0 && diff > -80) {
-                wrapper.style.transform = `translateX(${diff}px)`;
-                const deleteBtn = wrapper.parentElement.querySelector('.delete-action');
-                if (deleteBtn) deleteBtn.style.opacity = Math.abs(diff) / 80;
-            }
-        }, { passive: true });
-
-        wrapper.addEventListener('touchend', () => {
-            isSwiping = false;
-            wrapper.style.transition = 'transform 0.2s ease-out';
-            const diff = currentX - startX;
-            const deleteBtn = wrapper.parentElement.querySelector('.delete-action');
-
-            if (diff < -40) {
-                wrapper.style.transform = 'translateX(-80px)';
-                if (deleteBtn) deleteBtn.style.opacity = '1';
-            } else {
-                wrapper.style.transform = 'translateX(0)';
-                if (deleteBtn) deleteBtn.style.opacity = '0';
-            }
-        });
-    }
-
-    document.querySelectorAll('.message-wrapper').forEach(setupSwipe);
-
-    // --- DELETE MESSAGE ---
-    function deleteMessage(msgId, btnElement) {
-        if (!confirm('Delete this message?')) return;
-        
-        const wrapper = btnElement.parentElement.querySelector('.message-wrapper');
-        if (wrapper) wrapper.style.transform = 'translateX(0)';
-
-        fetch(`/chat/delete/${msgId}/`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                const bubble = wrapper.querySelector('.message-bubble');
-                bubble.innerHTML = `<div style="font-style: italic; opacity: 0.6;">This message was deleted.</div>`;
-                if (btnElement) btnElement.remove();
-            }
-        });
-    }
 
     // --- TEXT MESSAGES ---
     function sendMessage() {
@@ -425,7 +213,7 @@
     const overlay = document.getElementById('recording-overlay');
 
     async function startRecording(e) {
-        e.preventDefault(); 
+        e.preventDefault(); // Prevent default touch behaviors
         if (isRecording) return;
         
         try {
@@ -460,9 +248,12 @@
         overlay.style.display = 'none';
     }
 
+    // Mouse events for desktop
     recordBtn.addEventListener('mousedown', startRecording);
     recordBtn.addEventListener('mouseup', stopRecording);
     recordBtn.addEventListener('mouseleave', stopRecording);
+
+    // Touch events for mobile
     recordBtn.addEventListener('touchstart', startRecording);
     recordBtn.addEventListener('touchend', stopRecording);
 
@@ -471,6 +262,7 @@
         const audio = btn.parentElement.querySelector('audio');
         const icon = btn.querySelector('.material-icons-round');
         
+        // Pause all other audios
         document.querySelectorAll('audio').forEach(a => {
             if (a !== audio) {
                 a.pause();
@@ -491,10 +283,12 @@
         const player = audio.parentElement;
         const progressBar = player.querySelector('.wa-progress-bar');
         const timeDisplay = player.querySelector('.wa-time');
+        
         const current = audio.currentTime;
-        const duration = audio.duration || 1; 
+        const duration = audio.duration || 1; // Avoid divide by zero
         
         progressBar.style.width = (current / duration) * 100 + '%';
+        
         const mins = Math.floor(current / 60);
         const secs = Math.floor(current % 60);
         timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -515,12 +309,16 @@
         audio.currentTime = (clickX / width) * audio.duration;
     }
 
+    // --- IMAGE MODAL ---
     function openImageModal(imageUrl) {
         document.getElementById('modal-image').src = imageUrl;
         document.getElementById('image-modal').style.display = 'flex';
     }
+    function closeImageModal() {
+        document.getElementById('image-modal').style.display = 'none';
+    }
     document.getElementById('image-modal').addEventListener('click', function(e) {
-        if (e.target === this) this.style.display = 'none';
+        if (e.target === this) closeImageModal();
     });
 
     const badge = document.getElementById('inbox-badge');
