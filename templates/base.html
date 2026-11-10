@@ -4,15 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Campus Textbook MarketPlace</title>
+    <title>Campus Textbook Exchange</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
     
-    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     
-
     <link rel="stylesheet" href="{% static 'css/glass.css' %}">
 </head>
 <body style="display: flex; flex-direction: column; min-height: 100vh;">
@@ -76,7 +75,7 @@
 
     <!-- FOOTER -->
     <footer class="site-footer">
-        <p>&copy; 2026 Campus Textbook Marketplace. Built by Group 6 CSC.</p>
+        <p>&copy; 2026 Campus Textbook Exchange. Built by Group 6 CSC.</p>
     </footer>
 
     <!-- TOAST AUTO-HIDE SCRIPT -->
@@ -99,7 +98,6 @@
             hamburger.addEventListener('click', () => {
                 navLinks.classList.toggle('active');
                 
-                // Toggle Icon between menu and close
                 if (navLinks.classList.contains('active')) {
                     hamburgerIcon.textContent = 'close';
                 } else {
@@ -107,7 +105,6 @@
                 }
             });
 
-            // Close menu when a link is clicked (good for mobile UX)
             navLinks.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', () => {
                     navLinks.classList.remove('active');
@@ -119,25 +116,23 @@
 
     {% if user.is_authenticated %}
     <script>
-        // Connect to global notification socket
-        const notifSocket = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+        // FIXED: Detect HTTPS and use WSS for notifications
+        const notifProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const notifSocket = new WebSocket(notifProtocol + window.location.host + '/ws/notifications/');
+        
         const inboxBadge = document.getElementById('inbox-badge');
 
         notifSocket.onmessage = function(e) {
             const data = JSON.parse(e.data);
             
-            // Check if we are already in this chat room
             const currentUrl = window.location.pathname;
             const isInChatRoom = currentUrl.includes(`/chat/room/${data.room_id}/`);
 
-            // ONLY update the badge and show toast if we are NOT in the chat room
             if (!isInChatRoom) {
-                // Update Badge
                 let currentCount = parseInt(inboxBadge.innerText) || 0;
                 inboxBadge.innerText = currentCount + 1;
                 inboxBadge.style.display = 'inline-block';
 
-                // Show Toast Pop-up
                 const toastContainer = document.getElementById('toast-container');
                 const toast = document.createElement('div');
                 toast.className = 'toast toast-info';
@@ -153,14 +148,12 @@
                     </div>
                 `;
                 
-                // Clicking the toast takes you to the chat
                 toast.onclick = function() {
                     window.location.href = `/chat/room/${data.room_id}/`;
                 };
 
                 toastContainer.appendChild(toast);
 
-                // Auto remove after 6 seconds
                 setTimeout(() => {
                     toast.style.animation = 'slideOut 0.5s forwards';
                     setTimeout(() => toast.remove(), 500);

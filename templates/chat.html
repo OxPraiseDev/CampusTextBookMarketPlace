@@ -127,7 +127,11 @@
 {{ room.id|json_script:"room-id" }}
 <script>
     const roomId = JSON.parse(document.getElementById('room-id').textContent);
-    const chatSocket = new WebSocket('ws://' + window.location.host + '/ws/chat/' + roomId + '/');
+    
+    // FIXED: Detect HTTPS and use WSS (Secure WebSocket)
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const chatSocket = new WebSocket(wsProtocol + window.location.host + '/ws/chat/' + roomId + '/');
+    
     const chatLog = document.getElementById('chat-log');
     const messageInput = document.getElementById('chat-message-input');
     const submitBtn = document.getElementById('chat-message-submit');
