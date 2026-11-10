@@ -1,7 +1,7 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from django.conf import settings
-from django.conf.urls.static import static
+from django.views.static import serve  # <-- Import this
 
 from apps.marketplace.views import (
     home, create_listing, admin_dashboard, 
@@ -37,7 +37,7 @@ urlpatterns = [
     path('dashboard/delete-listing/<uuid:listing_id>/', delete_listing, name='delete_listing'),
     path('dashboard/delete-user/<int:user_id>/', delete_user, name='delete_user'),
     path('dashboard/edit-user/<int:user_id>/', user_views.edit_user_view, name='edit_user'),
+    
+    # THIS IS THE MAGIC FIX: Force media files to be served even in production
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
