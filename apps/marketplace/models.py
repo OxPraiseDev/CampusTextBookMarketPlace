@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from cloudinary.models import CloudinaryField # <-- IMPORT CLOUDINARY
 
 class Book(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -38,7 +39,9 @@ class Listing(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=10, choices=STATUS, default='ACTIVE')
     is_flagged = models.BooleanField(default=False)
-    image = models.ImageField(upload_to='book_images/', blank=True, null=True)
+    
+    # CHANGED TO CLOUDINARY FIELD
+    image = CloudinaryField('image', blank=True, null=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
 

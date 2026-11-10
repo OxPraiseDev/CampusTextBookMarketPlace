@@ -1,24 +1,17 @@
 """
 Django settings for config project.
 """
-
 import os
 import dj_database_url
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-default-dev-key-change-me')
-
-# Default to True locally, but Render will set this to 'False'
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
-
 ALLOWED_HOSTS = ['*'] 
 CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
 
-# Application definition
 INSTALLED_APPS = [
     'daphne', 
     'django.contrib.admin',
@@ -28,6 +21,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
+    'cloudinary_storage', # <-- ADDED CLOUDINARY
+    'cloudinary',         # <-- ADDED CLOUDINARY
     'apps.users',
     'apps.marketplace',
     'apps.interactions',
@@ -65,28 +60,22 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = "config.asgi.application"
 
-# --- CHANNEL LAYERS (REDIS VS IN-MEMORY) ---
 REDIS_URL = os.environ.get('REDIS_URL')
 
 if REDIS_URL:
-    # Production (Render): Use Redis for WebSockets
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {
-                "hosts": [REDIS_URL],
-            },
+            "CONFIG": { "hosts": [REDIS_URL] },
         },
     }
 else:
-    # Local Development: Use In-Memory (No Redis needed on your PC)
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels.layers.InMemoryChannelLayer"
         }
     }
 
-# --- DATABASE ---
 DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
@@ -95,7 +84,6 @@ DATABASES = {
     )
 }
 
-# Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -103,29 +91,40 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles' 
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Email
 MAILERS = {
     'default': {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
 
-# Custom User Model
 AUTH_USER_MODEL = 'users.Student'
 
-# Media Files (Uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# --- CLOUDINARY CONFIGURATION ---
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': '594962451991987', # Assuming this is your cloud name
+    'API_KEY': 'poDhlC4wCWe3Ex48uawynwB6j40',
+    'API_SECRET': 'PASTE_YOUR_API_SECRET_HERE', # <--- REPLACE THIS WITH YOUR ACTUAL SECRET
+}
+
+# Required for Django 4.2+ / 5+ / 6+
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}

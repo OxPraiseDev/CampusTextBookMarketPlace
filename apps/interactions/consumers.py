@@ -9,6 +9,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_group_name = f'chat_{self.room_id}'
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
+        await self.mark_as_read()
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
@@ -55,6 +56,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         room = ChatRoom.objects.select_related('buyer', 'seller', 'listing__book').get(id=self.room_id)
         recipient = room.seller if user == room.buyer else room.buyer
         return recipient.id, room.listing.book.title
+
+    @database_sync_to_async
+    def mark_as_read(self):
+        user = self.scope["user"]
+        if user.is_authenticated:
+            Message.objects.filter(room_id=self.room_id, is_read=False).exclude(sender=user).update(is_read=True)
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
