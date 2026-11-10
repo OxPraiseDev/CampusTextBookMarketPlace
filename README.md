@@ -3,7 +3,7 @@
 A localized, student-to-student bulletin board application where students on the same campus can list, buy, sell, or trade used textbooks. Built to make textbook discovery easier, more affordable, and accessible for university students.
 
 ## Live Demo
-*Deployment in progress on Render (Link will be updated soon)*
+*Deployment in progress on Render (https://campustextbookmarketplace.onrender.com)*
 
 ---
 
