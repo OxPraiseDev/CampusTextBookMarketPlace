@@ -18,7 +18,6 @@
     font-family: var(--font-main) !important;
 }
 
-/* Protect Material Icons from being overwritten by the font above */
 .material-icons-round {
     font-family: 'Material Icons Round' !important;
 }
@@ -31,9 +30,10 @@ body {
     color: var(--text-main);
     display: flex;
     flex-direction: column;
+    padding-top: 75px; /* Space for fixed navbar */
 }
 
-/* Navbar */
+/* Navbar - FIXED */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -41,9 +41,11 @@ body {
     padding: 15px 5%;
     background: var(--panel-bg);
     box-shadow: 0 4px 20px -5px rgba(0,0,0,0.05);
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 100;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
 }
 
 .nav-brand {
@@ -54,21 +56,18 @@ body {
     font-weight: 700;
 }
 
-/* --- UPDATED NAVBRAND TEXT SIZE --- */
 .nav-brand h2 {
     font-size: 1.1rem; 
     margin: 0;
     white-space: nowrap;
 }
 
-/* Desktop Nav Links */
 .nav-links {
     display: flex;
     align-items: center;
     gap: 20px;
 }
 
-/* Removes the underline from links */
 .nav-link {
     color: var(--text-muted);
     text-decoration: none;
@@ -223,7 +222,7 @@ body {
 /* Toast Notifications */
 #toast-container {
     position: fixed;
-    top: 20px;
+    top: 80px; /* Pushed down slightly to clear the fixed navbar */
     right: 20px;
     z-index: 9999;
     display: flex;
@@ -270,10 +269,6 @@ body {
 
 /* Mobile View Adjustments */
 @media (max-width: 768px) {
-    .navbar {
-        position: relative; 
-    }
-
     .hamburger {
         display: block; 
     }
@@ -306,11 +301,10 @@ body {
         margin: 10px 0;
     }
 
-    /* Adjust forms and header for mobile */
     .form-grid { grid-template-columns: 1fr; gap: 0; }
     .auth-card { padding: 25px 20px; }
     .auth-card h2 { font-size: 1.5rem; }
-    .nav-brand h2 { font-size: 0.95rem; } /* Even smaller on mobile screens */
+    .nav-brand h2 { font-size: 0.95rem; }
 }
 
 @keyframes slideDown {
@@ -318,7 +312,7 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Solid Professional Table (No Glassmorphism) */
+/* Solid Professional Table */
 .solid-panel {
     background: #ffffff;
     border-radius: 16px;
@@ -362,7 +356,6 @@ body {
     color: #0f172a;
 }
 
-/* Mobile responsive table */
 .table-responsive {
     width: 100%;
     overflow-x: auto;
