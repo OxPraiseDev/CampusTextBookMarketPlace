@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block content %}
+<section style="text-align: center; margin-bottom: 30px;">
+    <h1 style="font-size: 2.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">Find Your Textbooks.</h1>
+    <p style="color: var(--text-muted); font-size: 1.1rem;">Buy, sell, and trade directly with students on campus.</p>
+</section>
+
+<!-- SEARCH & FILTER FORM -->
+<div class="solid-panel" style="margin-bottom: 30px; padding: 25px;">
+    <form method="GET" class="search-form" id="search-form">
+        <div class="search-group" style="flex: 2; min-width: 250px;">
+            <label>Search Title/Author</label>
+            <input type="text" name="q" id="search-input" value="{{ query|default:'' }}" class="form-control" placeholder="e.g. Calculus, James Stewart...">
+        </div>
+        <div class="search-group">
+            <label>Condition</label>
+            <select name="condition" id="condition-filter" class="form-control">
+                <option value="">All</option>
+                <option value="NEW" {% if condition == 'NEW' %}selected{% endif %}>New</option>
+                <option value="LIKE_NEW" {% if condition == 'LIKE_NEW' %}selected{% endif %}>Like New</option>
+                <option value="GOOD" {% if condition == 'GOOD' %}selected{% endif %}>Good</option>
+            </select>
+        </div>
+        <div class="search-group">
+            <label>Type</label>
+            <select name="listing_type" id="type-filter" class="form-control">
+                <option value="">All</option>
+                <option value="SELL" {% if listing_type == 'SELL' %}selected{% endif %}>Sell</option>
+                <option value="TRADE" {% if listing_type == 'TRADE' %}selected{% endif %}>Trade</option>
+            </select>
+        </div>
+        <div class="search-group" style="flex: 0;">
+            <button type="submit" class="btn btn-primary search-btn" id="search-btn">
+                <span class="material-icons-round" style="vertical-align: middle;">search</span> Search
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- THE BOOK GRID (Loaded via AJAX) -->
+<div id="grid-wrapper">
+    {% include '_book_grid.html' %}
+</div>
+
+<script>
+    const searchInput = document.getElementById('search-input');
+    const conditionFilter = document.getElementById('condition-filter');
+    const typeFilter = document.getElementById('type-filter');
+    const gridWrapper = document.getElementById('grid-wrapper');
+    const searchBtn = document.getElementById('search-btn');
+    let debounceTimer;
+
+    function performLiveSearch() {
+        const q = searchInput.value;
+        const condition = conditionFilter.value;
+        const type = typeFilter.value;
+
+        // Show loading state (optional, but good for UX)
+        gridWrapper.style.opacity = '0.5';
+
+        const url = `/?q=${encodeURIComponent(q)}&condition=${condition}&listing_type=${type}`;
+
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            gridWrapper.innerHTML = data.html;
+            gridWrapper.style.opacity = '1';
+        })
+        .catch(error => {
+            console.error('Error fetching search results:', error);
+            gridWrapper.style.opacity = '1';
+        });
+    }
+
+    // Trigger on typing (Debounced so it doesn't spam the server)
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(performLiveSearch, 400); // Waits 400ms after typing stops
+    });
+
+    // Trigger instantly on dropdown change
+    conditionFilter.addEventListener('change', performLiveSearch);
+    typeFilter.addEventListener('change', performLiveSearch);
+
+    // Prevent form submission (rely entirely on AJAX)
+    document.getElementById('search-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        performLiveSearch();
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 500px;"> <!-- Login card is slightly narrower but still big -->
+        <h2>Welcome Back</h2>
+        <p class="auth-subtitle">Log in to continue to your dashboard.</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="form-group">
+                    <label>{{ field.label }}</label>
+                    {{ field }}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-large">Log In</button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 30px; font-size: 1rem; color: var(--text-muted);">
+            Need an account? <a href="{% url 'register' %}" style="color: var(--primary); font-weight: 700; text-decoration: none;">Sign up</a>
+        </p>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('input').forEach(input => { input.classList.add('form-control'); });
+</script>
+{% endblock %}

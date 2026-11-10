@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 500px;">
+        <h2>Edit Student Profile</h2>
+        <p class="auth-subtitle">Updating details for: <strong>{{ edit_user.username }}</strong></p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="form-grid">
+                {% for field in form %}
+                    <div class="form-group full-width">
+                        <label>{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary btn-large">Save Changes</button>
+        </form>
+        
+        <p style="text-align: center; margin-top: 20px;">
+            <a href="{% url 'admin_dashboard' %}" style="color: var(--text-muted); font-weight: 600; text-decoration: none;">Cancel and go back</a>
+        </p>
+    </div>
+</div>
+<script>
+    document.querySelectorAll('input').forEach(input => { input.classList.add('form-control'); });
+</script>
+{% endblock %}

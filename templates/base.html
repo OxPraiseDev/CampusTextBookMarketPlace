@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Textbook MarketPlace</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Material+Icons+Round" rel="stylesheet">
+    
+
+    <link rel="stylesheet" href="{% static 'css/glass.css' %}">
+</head>
+<body style="display: flex; flex-direction: column; min-height: 100vh;">
+
+    <!-- TOAST NOTIFICATIONS CONTAINER -->
+    <div id="toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="toast toast-{{ message.tags }}">
+                    <span class="material-icons-round">
+                        {% if message.tags == 'success' %}check_circle
+                        {% elif message.tags == 'error' %}error
+                        {% else %}info{% endif %}
+                    </span>
+                    <p>{{ message }}</p>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="material-icons-round" style="font-size: 28px;">menu_book</span>
+            <h2>Campus Textbook Exchange</h2>
+        </div>
+
+        <!-- Hamburger Icon (Only visible on mobile) -->
+        <div class="hamburger" id="hamburger">
+            <span class="material-icons-round" id="hamburger-icon">menu</span>
+        </div>
+
+        <!-- Nav Links -->
+        <div class="nav-links" id="nav-links">
+            <a href="/" class="nav-link">Home</a>
+            
+            {% if user.is_authenticated %}
+                <span style="font-weight: 600; color: var(--primary);">Hi, {{ user.username }}</span>
+                
+                <a href="{% url 'inbox' %}" class="nav-link" style="display:flex; align-items:center; gap:5px; position: relative;">
+                    <span class="material-icons-round" style="font-size:18px;">inbox</span> Inbox
+                    <!-- BADGE -->
+                    <span id="inbox-badge" class="badge" style="{% if unread_count == 0 %}display: none;{% endif %} position: absolute; top: -5px; right: -12px; background: #ef4444; color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; border: 2px solid white;">
+                        {{ unread_count }}
+                    </span>
+                </a>
+                
+                <a href="{% url 'create_listing' %}" class="btn btn-primary">List a Book</a>
+                <a href="{% url 'logout' %}" class="btn btn-outline">Logout</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="nav-link">Login</a>
+                <a href="{% url 'register' %}" class="btn btn-primary">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-container" style="flex: 1;">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+        <p>&copy; 2026 Campus Textbook Marketplace. Built by Group 6 CSC.</p>
+    </footer>
+
+    <!-- TOAST AUTO-HIDE SCRIPT -->
+    <script>
+        // Toast Auto-hide
+        setTimeout(function() {
+            let toasts = document.querySelectorAll('.toast');
+            toasts.forEach(function(toast) {
+                toast.style.animation = 'slideOut 0.5s forwards';
+                setTimeout(() => toast.remove(), 500);
+            });
+        }, 4000);
+
+        // Hamburger Menu Logic
+        const hamburger = document.getElementById('hamburger');
+        const navLinks = document.getElementById('nav-links');
+        const hamburgerIcon = document.getElementById('hamburger-icon');
+
+        if (hamburger) {
+            hamburger.addEventListener('click', () => {
+                navLinks.classList.toggle('active');
+                
+                // Toggle Icon between menu and close
+                if (navLinks.classList.contains('active')) {
+                    hamburgerIcon.textContent = 'close';
+                } else {
+                    hamburgerIcon.textContent = 'menu';
+                }
+            });
+
+            // Close menu when a link is clicked (good for mobile UX)
+            navLinks.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinks.classList.remove('active');
+                    hamburgerIcon.textContent = 'menu';
+                });
+            });
+        }
+    </script>
+
+    {% if user.is_authenticated %}
+    <script>
+        // Connect to global notification socket
+        const notifSocket = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+        const inboxBadge = document.getElementById('inbox-badge');
+
+        notifSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            // Check if we are already in this chat room
+            const currentUrl = window.location.pathname;
+            const isInChatRoom = currentUrl.includes(`/chat/room/${data.room_id}/`);
+
+            // ONLY update the badge and show toast if we are NOT in the chat room
+            if (!isInChatRoom) {
+                // Update Badge
+                let currentCount = parseInt(inboxBadge.innerText) || 0;
+                inboxBadge.innerText = currentCount + 1;
+                inboxBadge.style.display = 'inline-block';
+
+                // Show Toast Pop-up
+                const toastContainer = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'toast toast-info';
+                toast.style.animation = 'slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+                toast.style.cursor = 'pointer';
+                
+                toast.innerHTML = `
+                    <span class="material-icons-round">chat</span>
+                    <div>
+                        <p style="font-weight: bold; margin: 0;">${data.sender}</p>
+                        <p style="font-size: 0.8rem; margin: 0; color: #475569;">${data.content}</p>
+                        <p style="font-size: 0.7rem; margin: 0; color: var(--primary); font-weight: 600;">Re: ${data.book_title}</p>
+                    </div>
+                `;
+                
+                // Clicking the toast takes you to the chat
+                toast.onclick = function() {
+                    window.location.href = `/chat/room/${data.room_id}/`;
+                };
+
+                toastContainer.appendChild(toast);
+
+                // Auto remove after 6 seconds
+                setTimeout(() => {
+                    toast.style.animation = 'slideOut 0.5s forwards';
+                    setTimeout(() => toast.remove(), 500);
+                }, 6000);
+            }
+        };
+    </script>
+    {% endif %}
+</body>
+</html>

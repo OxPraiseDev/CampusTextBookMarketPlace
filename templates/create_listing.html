@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="auth-wrapper" style="padding: 20px 0;">
+    <div class="auth-card" style="max-width: 800px;">
+        <h2>Post a Textbook</h2>
+        <p class="auth-subtitle">Provide your book details to publish your listing.</p>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <h3 style="font-size: 1.1rem; margin-bottom: 15px; color: var(--primary);">Book Information</h3>
+            <div class="form-grid">
+                <div class="form-group"><label>Book Title</label>{{ form.title }}</div>
+                <div class="form-group"><label>Author</label>{{ form.author }}</div>
+                <div class="form-group"><label>ISBN</label>{{ form.isbn }}</div>
+                <div class="form-group"><label>Edition</label>{{ form.edition }}</div>
+                <div class="form-group full-width"><label>Subject</label>{{ form.subject }}</div>
+            </div>
+
+            <h3 style="font-size: 1.1rem; margin: 20px 0 15px 0; color: var(--primary);">Listing Details</h3>
+            <div class="form-grid">
+                <div class="form-group"><label>Listing Type</label>{{ form.listing_type }}</div>
+                <div class="form-group"><label>Condition</label>{{ form.condition }}</div>
+                <div class="form-group full-width"><label>Asking Price (₦)</label>{{ form.asking_price }}</div>
+                <div class="form-group full-width"><label>Description</label>{{ form.description }}</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large">Publish listing</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Apply CSS to all form inputs
+
+
+    document.querySelectorAll('input, select, textarea').forEach(input => { 
+        input.classList.add('form-control'); 
+    });
+
+    // Disable Price field if Trade is selected
+    const typeField = document.querySelector('select[name="listing_type"]');
+    const priceField = document.querySelector('input[name="asking_price"]');
+    const priceGroup = priceField.closest('.form-group');
+
+    function togglePrice() {
+        if (typeField.value === 'TRADE') {
+            priceField.value = '';
+            priceField.disabled = true;
+            priceGroup.style.opacity = '0.5';
+        } else {
+            priceField.disabled = false;
+            priceGroup.style.opacity = '1';
+        }
+    }
+
+    typeField.addEventListener('change', togglePrice);
+    togglePrice(); // Run on page load
+
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="solid-panel" style="max-width: 800px; margin: 0 auto;">
+    <h2 style="margin-bottom: 10px;">Propose a Trade</h2>
+    <p style="color: var(--text-muted); margin-bottom: 30px;">
+        You want <strong>{{ target_listing.book.title }}</strong>. Select one of your active books to offer in exchange:
+    </p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="listing-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));">
+            {% for my_book in my_listings %}
+                <label style="cursor: pointer;">
+                    <input type="radio" name="offered_listing" value="{{ my_book.id }}" required style="display: none;" class="trade-radio">
+                    <div class="book-card trade-card" style="border: 2px solid #e2e8f0; padding: 20px; border-radius: 12px; transition: 0.2s;">
+                        <h4 style="margin-bottom: 5px; color: var(--text-main);">{{ my_book.book.title }}</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">{{ my_book.book.author }}</p>
+                        
+                        <div style="display: flex; gap: 8px;">
+                            <span class="badge" style="background: #f1f5f9; color: var(--text-main); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem;">
+                                {{ my_book.get_condition_display }}
+                            </span>
+                            <span class="badge" style="background: #ecfdf5; color: var(--primary); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600;">
+                                Listed for: {{ my_book.get_listing_type_display }}
+                            </span>
+                        </div>
+                    </div>
+                </label>
+            {% endfor %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-large" style="margin-top: 30px;">Send Trade Proposal</button>
+    </form>
+</div>
+
+<style>
+    /* Visually show the selected card */
+    .trade-radio:checked + .trade-card {
+        border-color: var(--primary) !important;
+        background-color: #ecfdf5;
+        box-shadow: 0 0 0 2px var(--primary);
+    }
+</style>
+{% endblock %}

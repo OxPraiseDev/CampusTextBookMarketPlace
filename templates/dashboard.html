@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .dash-wrapper { display: flex; gap: 30px; align-items: flex-start; margin-top: 20px; }
+    .dash-sidebar { width: 260px; background: white; border-radius: 16px; padding: 20px 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; position: sticky; top: 100px; flex-shrink: 0; }
+    .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 15px 25px; color: #475569; font-weight: 600; text-decoration: none; cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+    .sidebar-link:hover { background: #f8fafc; color: var(--primary); }
+    .sidebar-link.active { background: #ecfdf5; color: var(--primary); border-left-color: var(--primary); }
+    .dash-content { flex: 1; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); border: 1px solid #e2e8f0; min-width: 0; }
+    .dash-section { display: none; animation: fadeIn 0.3s ease; }
+    .dash-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @media (max-width: 768px) {
+        .dash-wrapper { flex-direction: column; }
+        .dash-sidebar { width: 100%; position: relative; top: 0; display: flex; overflow-x: auto; padding: 10px; }
+        .sidebar-link { padding: 10px 15px; white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; }
+        .sidebar-link.active { border-left-color: transparent; border-bottom-color: var(--primary); }
+    }
+</style>
+
+<div class="dash-wrapper">
+    <div class="dash-sidebar">
+        <a class="sidebar-link active" onclick="showSection('overview', this)">
+            <span class="material-icons-round">dashboard</span> Overview
+        </a>
+        <a class="sidebar-link" onclick="showSection('active-listings', this)">
+            <span class="material-icons-round">menu_book</span> Active Listings
+        </a>
+        <a class="sidebar-link" onclick="showSection('flagged-listings', this)">
+            <span class="material-icons-round" style="color: #ef4444;">flag</span> Flagged
+            {% if total_flagged > 0 %}<span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: auto;">{{ total_flagged }}</span>{% endif %}
+        </a>
+        <a class="sidebar-link" onclick="showSection('reports', this)">
+            <span class="material-icons-round" style="color: #ef4444;">report</span> Reports
+            {% if total_reports > 0 %}<span style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; margin-left: auto;">{{ total_reports }}</span>{% endif %}
+        </a>
+        <a class="sidebar-link" onclick="showSection('manage-users', this)">
+            <span class="material-icons-round">groups</span> Manage Students
+        </a>
+    </div>
+
+    <div class="dash-content">
+        <!-- OVERVIEW SECTION -->
+        <div id="overview" class="dash-section active">
+            <h1 style="font-size: 1.8rem; margin-bottom: 20px; font-weight: 700;">Dashboard Overview</h1>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border-left: 4px solid var(--primary);">
+                    <p style="color: #475569; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Registered Students</p>
+                    <h2 style="font-size: 2.5rem; margin: 10px 0 0 0;">{{ total_users }}</h2>
+                </div>
+                <div style="background: #f8fafc; padding: 25px; border-radius: 12px; border-left: 4px solid #3b82f6;">
+                    <p style="color: #475569; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Live Listings</p>
+                    <h2 style="font-size: 2.5rem; margin: 10px 0 0 0;">{{ total_listings }}</h2>
+                </div>
+                <div style="background: #fef2f2; padding: 25px; border-radius: 12px; border-left: 4px solid #ef4444;">
+                    <p style="color: #ef4444; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;">Flagged Items</p>
+                    <h2 style="font-size: 2.5rem; margin: 10px 0 0 0; color: #ef4444;">{{ total_flagged }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVE LISTINGS SECTION -->
+        <div id="active-listings" class="dash-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 1.5rem;">Active Listings</h2>
+                <form method="GET" style="display: flex; gap: 10px;">
+                    <input type="text" name="listing_q" value="{{ listing_query }}" class="form-control" placeholder="Search book/seller..." style="width: 250px; padding: 8px;">
+                    <button type="submit" class="btn btn-outline" style="padding: 8px 15px;">Search</button>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead><tr><th>Book Title</th><th>Seller</th><th>Price</th><th style="text-align: right;">Actions</th></tr></thead>
+                    <tbody>
+                        {% for listing in active_listings %}
+                        <tr>
+                            <td><strong>{{ listing.book.title }}</strong></td>
+                            <td>{{ listing.seller.username }}</td>
+                            <td>₦{{ listing.asking_price|default:"Trade" }}</td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'toggle_flag_listing' listing.id %}" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem; border-color: #f59e0b; color: #f59e0b;" title="Flag"><span class="material-icons-round" style="font-size: 16px;">flag</span></a>
+                                <a href="{% url 'delete_listing' listing.id %}" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="return confirm('Delete?');" title="Delete"><span class="material-icons-round" style="font-size: 16px;">delete</span></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" style="text-align: center; color: #64748b;">No active listings found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                {% if active_listings.has_previous %}<a href="?listing_page={{ active_listings.previous_page_number }}&user_q={{ user_query }}&listing_q={{ listing_query }}" class="btn btn-outline" style="padding: 5px 15px;"><span class="material-icons-round" style="font-size: 18px;">chevron_left</span></a>{% endif %}
+                <span style="display: flex; align-items: center; font-size: 0.9rem; font-weight: 600;">Page {{ active_listings.number }} of {{ active_listings.paginator.num_pages }}</span>
+                {% if active_listings.has_next %}<a href="?listing_page={{ active_listings.next_page_number }}&user_q={{ user_query }}&listing_q={{ listing_query }}" class="btn btn-outline" style="padding: 5px 15px;"><span class="material-icons-round" style="font-size: 18px;">chevron_right</span></a>{% endif %}
+            </div>
+        </div>
+
+        <!-- FLAGGED LISTINGS SECTION -->
+        <div id="flagged-listings" class="dash-section">
+            <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: #ef4444;">Flagged Listings</h2>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead style="background: #fef2f2;"><tr><th>Book Title</th><th>Seller</th><th>Type</th><th style="text-align: right;">Actions</th></tr></thead>
+                    <tbody>
+                        {% for listing in flagged_listings %}
+                        <tr>
+                            <td><strong>{{ listing.book.title }}</strong></td>
+                            <td>{{ listing.seller.username }}</td>
+                            <td>₦{{ listing.asking_price|default:"Trade" }}</td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'toggle_flag_listing' listing.id %}" class="btn btn-outline" style="padding: 5px 12px; font-size: 0.8rem; border-color: #10b981; color: #10b981; margin-right: 5px;"><span class="material-icons-round" style="font-size: 16px; vertical-align: middle;">undo</span> Unflag</a>
+                                <a href="{% url 'delete_listing' listing.id %}" class="btn btn-outline" style="padding: 5px 12px; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="return confirm('Permanently delete this listing?');"><span class="material-icons-round" style="font-size: 16px; vertical-align: middle;">delete</span> Delete</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" style="text-align: center; color: #64748b; padding: 30px;">No flagged listings. The marketplace is clean!</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- REPORTS SECTION -->
+        <div id="reports" class="dash-section">
+            <h2 style="margin: 0 0 20px 0; font-size: 1.5rem; color: #ef4444;">User Reports</h2>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead style="background: #fef2f2;"><tr><th>Reporter</th><th>Reported User</th><th>Reason</th><th style="text-align: right;">Actions</th></tr></thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>
+                                <strong>{{ report.reporter.username }}</strong><br>
+                                <span style="font-size: 0.8rem; color: #64748b;">{{ report.reporter.student_number }}</span>
+                            </td>
+                            <td>
+                                <strong style="color: #ef4444;">{{ report.reported_user.username }}</strong><br>
+                                <span style="font-size: 0.8rem; color: #64748b;">{{ report.reported_user.student_number }}</span>
+                            </td>
+                            <td>
+                                <p style="margin: 0; font-size: 0.9rem;">"{{ report.reason }}"</p>
+                                <span style="font-size: 0.75rem; color: #64748b;">Book: {{ report.room.listing.book.title }}</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'view_chat' report.room.id %}" target="_blank" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem; border-color: #3b82f6; color: #3b82f6; margin-bottom: 5px;"><span class="material-icons-round" style="font-size: 14px;">visibility</span> View Chat</a>
+                                <a href="{% url 'delete_user' report.reported_user.id %}" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="return confirm('BAN this user and delete all their data?');"><span class="material-icons-round" style="font-size: 14px;">block</span> Ban User</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" style="text-align: center; color: #64748b; padding: 30px;">No reports. Users are behaving well!</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MANAGE USERS SECTION -->
+        <div id="manage-users" class="dash-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 1.5rem;">Manage Students</h2>
+                <form method="GET" style="display: flex; gap: 10px;">
+                    <input type="text" name="user_q" value="{{ user_query }}" class="form-control" placeholder="Search name/matric..." style="width: 250px; padding: 8px;">
+                    <button type="submit" class="btn btn-outline" style="padding: 8px 15px;">Search</button>
+                </form>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead><tr><th>Student</th><th>Matric No.</th><th>Campus</th><th style="text-align: right;">Actions</th></tr></thead>
+                    <tbody>
+                        {% for u in all_users %}
+                        <tr>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 35px; height: 35px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700;">{{ u.username|first|upper }}</div>
+                                    <div><strong>{{ u.username }}</strong> {% if u.is_staff %}<span style="font-size: 0.6rem; background: #d1fae5; color: var(--primary); padding: 2px 6px; border-radius: 12px;">ADMIN</span>{% endif %}<br><span style="font-size: 0.8rem; color: #64748b;">{{ u.email }}</span></div>
+                                </div>
+                            </td>
+                            <td>{{ u.student_number|default:"N/A" }}</td>
+                            <td>{{ u.campus|default:"N/A" }}</td>
+                            <td style="text-align: right;">
+                                {% if not u.is_staff %}
+                                    <a href="{% url 'edit_user' u.id %}" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem; border-color: #3b82f6; color: #3b82f6;"><span class="material-icons-round" style="font-size: 16px;">edit</span></a>
+                                    <a href="{% url 'delete_user' u.id %}" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" onclick="return confirm('Delete User?');"><span class="material-icons-round" style="font-size: 16px;">delete</span></a>
+                                {% else %}
+                                    <span style="color: #94a3b8; font-size: 0.8rem;">Protected</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                {% if all_users.has_previous %}<a href="?user_page={{ all_users.previous_page_number }}&user_q={{ user_query }}&listing_q={{ listing_query }}" class="btn btn-outline" style="padding: 5px 15px;"><span class="material-icons-round" style="font-size: 18px;">chevron_left</span></a>{% endif %}
+                <span style="display: flex; align-items: center; font-size: 0.9rem; font-weight: 600;">Page {{ all_users.number }} of {{ all_users.paginator.num_pages }}</span>
+                {% if all_users.has_next %}<a href="?user_page={{ all_users.next_page_number }}&user_q={{ user_query }}&listing_q={{ listing_query }}" class="btn btn-outline" style="padding: 5px 15px;"><span class="material-icons-round" style="font-size: 18px;">chevron_right</span></a>{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showSection(sectionId, clickedElement) {
+        const sections = document.querySelectorAll('.dash-section');
+        sections.forEach(section => section.classList.remove('active'));
+        
+        const links = document.querySelectorAll('.sidebar-link');
+        links.forEach(link => link.classList.remove('active'));
+
+        document.getElementById(sectionId).classList.add('active');
+        clickedElement.classList.add('active');
+    }
+</script>
+{% endblock %}

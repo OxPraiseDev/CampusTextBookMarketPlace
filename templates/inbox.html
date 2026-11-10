@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="solid-panel" style="max-width: 800px; margin: 0 auto;">
+    <h2 style="margin-bottom: 20px;"><span class="material-icons-round" style="vertical-align: middle;">inbox</span> Your Inbox</h2>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+        {% for room in rooms %}
+<a href="{% url 'view_chat' room.id %}" style="text-decoration: none; color: inherit;">
+                <div style="padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; background: #f8fafc;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
+                    <div>
+                        <h4 style="margin: 0; color: var(--primary-dark);">{{ room.listing.book.title }}</h4>
+                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: var(--text-muted);">
+                            {% if request.user == room.buyer %}
+                                Chatting with Seller: <strong>{{ room.seller.username }}</strong>
+                            {% else %}
+                                Chatting with Buyer: <strong>{{ room.buyer.username }}</strong>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if room.is_completed %}
+                        <span class="badge" style="background: #d1fae5; color: var(--primary); padding: 5px 10px; border-radius: 8px; font-weight: bold;">Completed</span>
+                    {% else %}
+                        <span class="material-icons-round" style="color: var(--text-muted);">chevron_right</span>
+                    {% endif %}
+                </div>
+            </a>
+        {% empty %}
+            <p style="color: var(--text-muted); text-align: center; padding: 30px;">You have no messages yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
