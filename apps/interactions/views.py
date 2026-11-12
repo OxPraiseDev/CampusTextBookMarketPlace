@@ -1,3 +1,4 @@
+import uuid
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -54,13 +55,10 @@ def select_trade_book(request, listing_id):
 @login_required
 def view_chat(request, room_id):
     room = get_object_or_404(ChatRoom, id=room_id)
-    
-    # FIX: Allow Admins (is_staff) to view ANY chat for moderation
     if not request.user.is_staff and request.user != room.buyer and request.user != room.seller:
         messages.error(request, "You are not authorized to view this chat.")
         return redirect('home')
     
-    # Mark messages as read (only if the user is actually a participant)
     if request.user == room.buyer or request.user == room.seller:
         Message.objects.filter(room=room, is_read=False).exclude(sender=request.user).update(is_read=True)
     
@@ -92,12 +90,16 @@ def mark_messages_read(request, room_id):
 def confirm_transaction(request, room_id):
     room = get_object_or_404(ChatRoom, id=room_id)
     
+    # Update the confirmation status
     if request.user == room.buyer:
         room.buyer_confirmed = True
     elif request.user == room.seller:
         room.seller_confirmed = True
     room.save()
 
+    # Prepare the system message
+    channel_layer = get_channel_layer()
+    
     if room.buyer_confirmed and room.seller_confirmed:
         room.is_completed = True
         room.save()
@@ -106,54 +108,30 @@ def confirm_transaction(request, room_id):
         if room.offered_listing:
             room.offered_listing.status = 'SOLD'
             room.offered_listing.save()
+        
+        sys_msg = "✅ Transaction Completed Successfully! The book is now marked as SOLD/TRADED."
         messages.success(request, "Transaction successfully completed!")
+        
+    elif request.user == room.buyer:
+        sys_msg = "🔔 Buyer has confirmed receipt. Seller, please confirm handover to complete the transaction."
+        messages.info(request, "You have confirmed. Waiting for the seller...")
     else:
-        messages.info(request, "You have confirmed. Waiting for the other party...")
+        sys_msg = "🔔 Seller has confirmed handover. Buyer, please confirm receipt to complete the transaction."
+        messages.info(request, "You have confirmed. Waiting for the buyer...")
+
+    # Broadcast the system message to the chat room
+    async_to_sync(channel_layer.group_send)(
+        f'chat_{room.id}',
+        {
+            'type': 'chat_message',
+            'message': sys_msg,
+            'username': 'System',
+            'msg_id': f"sys-{uuid.uuid4().hex[:8]}", 
+            'message_type': 'system'
+        }
+    )
         
     return redirect('view_chat', room_id=room.id)
-
-@login_required
-def upload_chat_file(request, room_id):
-    if request.method == 'POST' and request.FILES.get('file'):
-        room = get_object_or_404(ChatRoom, id=room_id)
-        file = request.FILES['file']
-        msg_type = 'audio' if 'audio' in file.content_type else 'image'
-        
-        msg = Message.objects.create(
-            room=room, 
-            sender=request.user, 
-            file=file, 
-            message_type=msg_type,
-            content=""
-        )
-        
-        channel_layer = get_channel_layer()
-        recipient = room.seller if request.user == room.buyer else room.buyer
-        
-        async_to_sync(channel_layer.group_send)(
-            f'chat_{room.id}',
-            {
-                'type': 'chat_message',
-                'message': "", 
-                'username': request.user.username,
-                'msg_id': str(msg.id),
-                'file_url': msg.file.url,
-                'message_type': msg.message_type
-            }
-        )
-        
-        async_to_sync(channel_layer.group_send)(
-            f"user_{recipient.id}",
-            {
-                'type': 'send_notification',
-                'sender': request.user.username,
-                'room_id': str(room.id),
-                'content': f"Sent an {msg_type}",
-                'book_title': room.listing.book.title
-            }
-        )
-        return JsonResponse({'status': 'success'})
-    return JsonResponse({'status': 'failed'}, status=400)
 
 @login_required
 def submit_report(request, room_id):

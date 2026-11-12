@@ -1,7 +1,36 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+    /* System Message Styling */
+    .system-message-row {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        margin: 10px 0;
+    }
+    .system-bubble {
+        background: #e2e8f0;
+        color: #475569;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        max-width: 85%;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* Pulse Animation for Confirmation Button */
+    @keyframes pulse-orange {
+        0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
+</style>
+
 <div class="solid-panel" style="max-width: 800px; margin: 0 auto; padding: 0; overflow: hidden; display: flex; flex-direction: column; height: 75vh;">
     
+    <!-- Header -->
     <div style="background: var(--primary); color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <h3 style="margin: 0;">{{ room.listing.book.title }}</h3>
@@ -14,18 +43,28 @@
             {% if not room.is_completed %}
                 <form method="POST" action="{% url 'confirm_transaction' room.id %}">
                     {% csrf_token %}
-                    {% if request.user == room.buyer and not room.buyer_confirmed %}
-                        <button type="submit" class="btn btn-primary" style="background: white; color: var(--primary); font-size: 0.8rem;">
-                            {% if room.offered_listing %}Confirm Trade{% else %}Confirm Receipt{% endif %}
-                        </button>
-                    {% elif request.user == room.seller and not room.seller_confirmed %}
-                        <button type="submit" class="btn btn-primary" style="background: white; color: var(--primary); font-size: 0.8rem;">
-                            {% if room.offered_listing %}Confirm Trade{% else %}Confirm Handover{% endif %}
-                        </button>
-                    {% else %}
-                        <span style="font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; font-weight: 500;">
-                            Waiting for other party...
-                        </span>
+                    
+                    {% if request.user == room.buyer %}
+                        {% if room.buyer_confirmed %}
+                            <span style="font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; font-weight: 500;">Waiting for Seller...</span>
+                        {% elif room.seller_confirmed %}
+                            <button type="submit" class="btn btn-primary" style="background: #f59e0b; color: white; font-size: 0.8rem; animation: pulse-orange 2s infinite;">
+                                <span class="material-icons-round" style="font-size: 16px; vertical-align: middle;">priority_high</span> Seller Confirmed! Confirm Receipt
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary" style="background: white; color: var(--primary); font-size: 0.8rem;">Confirm Receipt</button>
+                        {% endif %}
+                        
+                    {% elif request.user == room.seller %}
+                        {% if room.seller_confirmed %}
+                            <span style="font-size: 0.8rem; background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; font-weight: 500;">Waiting for Buyer...</span>
+                        {% elif room.buyer_confirmed %}
+                            <button type="submit" class="btn btn-primary" style="background: #f59e0b; color: white; font-size: 0.8rem; animation: pulse-orange 2s infinite;">
+                                <span class="material-icons-round" style="font-size: 16px; vertical-align: middle;">priority_high</span> Buyer Confirmed! Confirm Handover
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn btn-primary" style="background: white; color: var(--primary); font-size: 0.8rem;">Confirm Handover</button>
+                        {% endif %}
                     {% endif %}
                 </form>
             {% else %}
@@ -34,7 +73,6 @@
                 </span>
             {% endif %}
 
-            <!-- REPORT BUTTON -->
             <button onclick="document.getElementById('report-modal').style.display = 'flex';" class="btn btn-outline" style="border-color: white; color: white; padding: 6px 12px; font-size: 0.8rem;" title="Report User">
                 <span class="material-icons-round" style="font-size: 16px;">flag</span>
             </button>
@@ -56,7 +94,6 @@
                     {% if message.message_type == 'image' %}
                         <img src="{{ message.file_base64 }}" style="max-width: 100%; border-radius: 8px; margin-top: 5px; cursor: pointer;" onclick="openImageModal('{{ message.file_base64 }}')" alt="Image">
                     {% elif message.message_type == 'audio' %}
-                        <!-- CUSTOM WHATSAPP AUDIO PLAYER -->
                         <div class="wa-audio-player">
                             <button class="wa-play-btn" onclick="toggleAudio(this)">
                                 <span class="material-icons-round">play_arrow</span>
@@ -76,7 +113,7 @@
     </div>
 
     <!-- Chat Input -->
-     {% if not room.is_completed and not request.user.is_staff %}
+    {% if not room.is_completed and not request.user.is_staff %}
     <div style="padding: 15px; background: white; border-top: 1px solid #e2e8f0;">
         <div style="display: flex; gap: 10px; align-items: center;">
             <input type="file" id="image-upload" accept="image/*" style="display: none;">
@@ -84,7 +121,6 @@
                 <span class="material-icons-round">image</span>
             </button>
 
-            <!-- HOLD TO RECORD BUTTON -->
             <button id="record-btn" class="btn btn-outline" style="border-radius: 50%; padding: 10px; border: none; color: var(--text-muted);">
                 <span class="material-icons-round">mic</span>
             </button>
@@ -99,19 +135,16 @@
     {% endif %}
 </div>
 
-<!-- RECORDING OVERLAY -->
 <div id="recording-overlay">
     <div class="recording-dot"></div>
     <span style="font-weight: 600; font-size: 1rem;">Recording... Release to send</span>
 </div>
 
-<!-- IMAGE MODAL -->
 <div id="image-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
     <span onclick="closeImageModal()" style="position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; font-weight: bold;">&times;</span>
     <img id="modal-image" src="" style="max-width: 90%; max-height: 90%; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
 </div>
 
-<!-- REPORT MODAL (THIS WAS MISSING) -->
 <div id="report-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
     <div style="background: white; padding: 30px; border-radius: 16px; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
         <h3 style="margin-top: 0; color: #ef4444; display: flex; align-items: center; gap: 8px;">
@@ -143,9 +176,30 @@
 
     chatLog.scrollTop = chatLog.scrollHeight;
 
+    // --- WEBSOCKET RECEIVE ---
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
+        
+        // --- HANDLE SYSTEM MESSAGES ---
+        if (data.message_type === 'system') {
+            const sysRow = document.createElement('div');
+            sysRow.className = 'system-message-row';
+            
+            const sysBubble = document.createElement('div');
+            sysBubble.className = 'system-bubble';
+            sysBubble.innerHTML = data.message;
+            
+            sysRow.appendChild(sysBubble);
+            chatLog.appendChild(sysRow);
+            chatLog.scrollTop = chatLog.scrollHeight;
+            
+            // Reload the page slightly to update the buttons (Confirm logic)
+            setTimeout(() => { window.location.reload(); }, 1500);
+            return;
+        }
+
         const isMe = data.username === currentUser;
+        
         const messageDiv = document.createElement('div');
         messageDiv.style.maxWidth = '75%';
         messageDiv.style.display = 'flex';
@@ -300,12 +354,10 @@
         const player = audio.parentElement;
         const progressBar = player.querySelector('.wa-progress-bar');
         const timeDisplay = player.querySelector('.wa-time');
-        
         const current = audio.currentTime;
         const duration = audio.duration || 1; 
         
         progressBar.style.width = (current / duration) * 100 + '%';
-        
         const mins = Math.floor(current / 60);
         const secs = Math.floor(current % 60);
         timeDisplay.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -326,7 +378,6 @@
         audio.currentTime = (clickX / width) * audio.duration;
     }
 
-    // --- IMAGE MODAL ---
     function openImageModal(imageUrl) {
         document.getElementById('modal-image').src = imageUrl;
         document.getElementById('image-modal').style.display = 'flex';
